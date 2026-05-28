@@ -1,0 +1,71 @@
+let handler = async (m, { conn }) => {
+  try {
+    const getTargetJid = () => {
+      if (m.mentionedJid && m.mentionedJid.length > 0) return m.mentionedJid[0]
+      if (m.quoted && m.quoted.sender) return m.quoted.sender
+      const match = (m.text || '').match(/@(\d{5,})/)
+      if (match) return `${match[1]}@s.whatsapp.net`
+      return m.sender
+    }
+
+    const who = getTargetJid()
+
+    const safeName = async (jid) => {
+      try {
+        const n = await conn.getName(jid)
+        return typeof n === 'string' && n.trim() ? n : jid.split('@')[0]
+      } catch {
+        return jid.split('@')[0]
+      }
+    }
+
+    const name = await safeName(who)
+    const name2 = await safeName(m.sender)
+
+    await conn.sendMessage(m.chat, { react: { text: '👋', key: m.key } })
+
+    let caption
+    if (m.mentionedJid && m.mentionedJid.length > 0) {
+      caption = `\`${name2}\` *مرحبًا* \`${name}\` *كيف حالك؟*`
+    } else if (m.quoted) {
+      caption = `\`${name2}\` *مرحبًا* \`${name}\` *كيف حالك اليوم؟*`
+    } else {
+      caption = `\`${name2}\` *سلم على جميع أعضاء المجموعة، كيف حالكم جميعاً؟*`
+    }
+
+    const videos = [
+      'https://files.catbox.moe/2akfd1.mp4',
+      'https://files.catbox.moe/95gidx.mp4',
+      'https://files.catbox.moe/f31dxs.mp4',
+      'https://files.catbox.moe/ia2xt1.mp4',
+      'https://files.catbox.moe/5p0m2e.mp4',
+      'https://files.catbox.moe/2akfd1.mp4',
+      'https://files.catbox.moe/u1ljt8.mp4',
+      'https://files.catbox.moe/d9z71j.mp4',
+      'https://files.catbox.moe/ng6lk2.mp4',
+      'https://files.catbox.moe/s7fm8r.mp4'
+    ]
+    const video = videos[Math.floor(Math.random() * videos.length)]
+
+    const mentions = who ? [who] : []
+    await conn.sendMessage(
+      m.chat,
+      {
+        video: { url: video },
+        gifPlayback: true,
+        caption,
+        mentions
+      },
+      { quoted: m }
+    )
+  } catch (err) {
+    await conn.sendMessage(m.chat, { text: `☽ خطأ: ${err.message}` }, { quoted: m })
+  }
+}
+
+handler.help = ['هلا @tag']
+handler.tags = ['anime']
+handler.command = ['hello', 'hola','مرحبا','هلا','هلو','هالو']
+handler.group = true
+
+export default handler
